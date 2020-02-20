@@ -89,3 +89,60 @@ Za svaki od zadataka postoji poseban `package`, opisno direktorijum, u kome se n
 ```
 
 Tako, na primer, za zadatak broj 5) koristi se direktorijum `LocationDistributedCache` - tačnije maper i reducer klase definisane u ovom direktorijumu. Ove klase se uvoze u glavnoj `LocationMobility.java` klasi.
+
+## MapReduce i glavna klasa LocationMobility.java
+
+```java
+import java.net.URI;
+
+import org.apache.hadoop.fs.Path; 
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text; 
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat; 
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat; 
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+...
+import LocationMobility.LocationMobilityMapper;
+import LocationMobility.LocationMobilityReducer;
+...
+ 
+public class LocationMobility { 
+ 
+  public static void main(String[] args) throws Exception { 
+     if (args.length != 2) { 
+       System.err.println("Usage: <input path> <output path>"); 
+       System.exit(-1); 
+     }
+      
+     Job job = Job.getInstance();
+     job.setJarByClass(LocationMobility.class);
+     job.setJobName("LocationMobility");
+ 
+     FileInputFormat.addInputPath(job, new Path(args[0])); 
+     FileOutputFormat.setOutputPath(job, new Path(args[1])); 
+      
+     // Odrediti broj slogova (pojava, torki, događaja) čiji atributi zadovoljavaju određeni uslov
+     // i registrovani su na određenoj lokaciji u datom vremenu
+     job.setMapperClass(LocationMobilityMapper.class);
+     job.setCombinerClass(LocationMobilityReducer.class);
+     job.setReducerClass(LocationMobilityReducer.class); 
+ 
+     job.setMapOutputKeyClass(LongWritable.class);
+     job.setMapOutputValueClass(Text.class);
+     job.setOutputKeyClass(Text.class);
+     job.setOutputValueClass(Text.class);
+    
+     MultipleOutputs.addNamedOutput(job, "temporary", TextOutputFormat.class, Text.class, NullWritable.class);
+     MultipleOutputs.addNamedOutput(job, "analysed", TextOutputFormat.class, IntWritable.class, NullWritable.class);
+      
+     System.exit(job.waitForCompletion(true) ? 0 : 1);
+  } 
+}
+```
+
+Za svaki od zadataka potrebno je koristiti različite klase reducer-a i maper-a. Ove klase se jednom poslu dodeljuju metodatama `job.setMapperClass` i `job.setReducerClass`. Format ulaznih i izlaznih parova ključeva i vrednosti koje se prosleđuju se takođe pojedinačno setuje blokom koda ispod izbora pomenutih klasa.
+
+Okruženju su dodata dva izlaza `temporary` i `analysed`. Prvi izlaz se koristi u procesu građenja drugog poput sistema logovanja gde se korisni podaci ili međurezultati šalju na izlaz. Drugi izlaz je važniji i sadrži rezultat obrade. Naravno, kod svake reducer klase treba da se rukovodi saglasno ovome.

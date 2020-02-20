@@ -61,3 +61,28 @@ Kada je `.jar` datoteka generisana, treba nad lokalnom `hadoop` konfiguracijom p
 ![alt text][screenshot_terminal]
 
 [screenshot_terminal]: meta/screenshot_terminal.png
+
+## Struktura projekta
+
+
+```
+/
+  Helpers/
+      Helpers.class
+  LocationAccelerometer/
+      LocationAccelerometerMapper.java
+      LocationAccelerometerReducer.java
+  LocationAudio/
+      LocationAudioMapper.java
+      LocationAudioReducer.java
+  LocationDistributedCache/
+      LocationDistributedCacheMapper.java
+      LocationDistributedCacheReducer.java
+  LocationMinMax/
+      LocationMinMaxMapper.java
+      LocationMinMaxReducer.java
+  LocationMobility/
+      LocationMobilityMapper.java
+      LocationMobilityReducer.java
+  LocationMobility.java
+```

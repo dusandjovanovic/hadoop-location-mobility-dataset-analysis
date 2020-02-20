@@ -245,4 +245,9 @@ Deljena ponašanja koja se koriste u različitim mapper ili reducer klasama su s
 3) `static String[] formTokensFromRecord` - formiranje tokena na osnovu sloga
 4) `static String[] formTokensFromCachedRecord` - formiranje tokena na osnovu sloga keširane datoteka
 5) `static boolean formStringFromTokens` - formiranje Stringa na osnovu niza tokena
-      * konfigurabilna metoda, koristi se za prenos podataka između maper-a i reducer-a
+      * konfigurabilna metoda, koristi se za prenos podataka između maper-a i reducer-a 
+      * na osnovu svih tokena, preko niza indeksa treba uvrstiti samo odabrane tokene u rezultat
+      * sadrži DELIMITER elemenat u vidu karaktera `,`
+      * može ili ne mora na kraj niza da preslika ceo izvorni slog
+
+## Zadatak 1)

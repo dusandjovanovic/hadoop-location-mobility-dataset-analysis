@@ -64,6 +64,7 @@ Kada je `.jar` datoteka generisana, treba nad lokalnom `hadoop` konfiguracijom p
 
 ## Struktura projekta
 
+Za svaki od zadataka postoji poseban `package`, opisno direktorijum, u kome se nalaze klase **mapper-a** i **reducer-a**. Osnovna klasa u kojoj se postavlja `hadoop` job okruženje i setuju mapper/reducer klase je `LocationMobility.java`.
 
 ```
 /
@@ -86,3 +87,5 @@ Kada je `.jar` datoteka generisana, treba nad lokalnom `hadoop` konfiguracijom p
       LocationMobilityReducer.java
   LocationMobility.java
 ```
+
+Tako, na primer, za zadatak broj 5) koristi se direktorijum `LocationDistributedCache` - tačnije maper i reducer klase definisane u ovom direktorijumu. Ove klase se uvoze u glavnoj `LocationMobility.java` klasi.

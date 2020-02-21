@@ -700,7 +700,7 @@ Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti obja�
 
 Dalje, da bi se koristilo keširanje i distribuiranje stranog dataseta do svakog čvora, koristi se podešavanje okruženja:
 
-```
+```java
 try { 
 	// the complete URI(Uniform Resource  
 	// Identifier) file path in HDFS for cached files

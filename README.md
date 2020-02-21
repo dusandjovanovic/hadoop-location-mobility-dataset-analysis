@@ -503,3 +503,191 @@ AVG_VALUE	0.22254551741862044
 ```
 
 Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom se po vrednosti izabranog atributa nalaze u top-N skupu.
+
+## Zadatak 3)
+
+Za potrebe prvog zadatka koriste se klase `LocationAccelerometerMapper.java` i `LocationAccelerometerReducer.java`.
+
+Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (accelerometer magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
+
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
+
+```java
+private long MINIMAL_DISTANCE_METERS = 10 * 100;
+
+private HashMap<Double[], ArrayList<String>> hmap; 
+private double TRESHOLD = 2.0;
+
+private String OUTPUT_TEMP = "temporary";
+private String OUTPUT_DONE = "analysed";
+
+@Override
+public void setup(Context context) throws IOException, InterruptedException {
+outputs = new MultipleOutputs<Text, Text>(context);
+hmap = new HashMap<Double[], ArrayList<String>>();
+}
+
+@Override
+public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+	String[] output = new String[7];
+
+	for (Text record : values) {
+		String[] tokens = Helpers.formTokensFromRecord(record);
+
+		if (tokens[0].equals(DATA_LOCATION)) { // Location data processing
+			output[0] = tokens[0];
+			output[1] = tokens[1];
+			output[2] = tokens[2];
+			output[3] = tokens[3];
+		}
+		else if (tokens[0].equals(DATA_SENSORS)) { // Sensor data processing 				
+			output[4] = tokens[0];
+			output[5] = tokens[1];
+			output[6] = tokens[2];
+		}
+	}
+
+	try {
+		if (Double.parseDouble(output[6]) > TRESHOLD) {
+			boolean shouldAddLocation = true;
+			for(Map.Entry<Double[], ArrayList<String>> entry : hmap.entrySet()) {
+			    Double[] presentKey = entry.getKey();
+			    ArrayList<String> value = entry.getValue();
+			    double latitude = Double.parseDouble(output[2]);
+				double longitude = Double.parseDouble(output[3]);
+			    if (Helpers.distanceInM(latitude, longitude, presentKey[0], presentKey[1]) < MINIMAL_DISTANCE_METERS) {
+				value.add(output[6]);
+				hmap.put(presentKey, value);
+				shouldAddLocation = false;
+			    }
+			}
+			if (shouldAddLocation) {
+				ArrayList<String> timestampList = new ArrayList<String>();
+				timestampList.add(output[6]);
+				Double[] newLocation = {Double.parseDouble(output[2]), Double.parseDouble(output[3])};
+				hmap.put(newLocation, timestampList);
+			}
+		}
+	}
+	catch(Exception err) {
+		System.err.println(err.toString());
+	}
+
+	outputs.write(OUTPUT_TEMP, key, Arrays.toString(output));
+}
+
+@Override
+public void cleanup(Context context) throws IOException, InterruptedException 
+{ 
+	Integer mostDenseLocationCount = 0;
+	Double[] mostDenseLocation = {0.0, 0.0};
+	for(Map.Entry<Double[], ArrayList<String>> entry : hmap.entrySet()) {
+	    Double[] presentKey = entry.getKey();
+	    ArrayList<String> value = entry.getValue();
+	    if (value.size() > mostDenseLocationCount) {
+		mostDenseLocationCount = value.size();
+		mostDenseLocation = presentKey;
+	    }
+	}
+
+	Text outputLocation = new Text(Arrays.toString(mostDenseLocation));
+	Text outputSensorReadingOnLocation = new Text(hmap.get(mostDenseLocation).toString());
+	outputs.write(OUTPUT_DONE, outputLocation, outputSensorReadingOnLocation);
+	outputs.close();
+} 
+```
+
+Za nalaženje lokacije se uzima u obzir konstana `MINIMAL_DISTANCE_METERS`, a za filtriranje vrednosti sa senzora akcelerometra konstanta praga `TRESHOLD`. Logika se bazira na tome da treba naći skupove "bliskih" očitavanja podataka. Odnosno, ako viže slogova različitih ključeva postoje uokviru prečnika `MINIMAL_DISTANCE_METERS` oni će činiti jedan skup.
+
+Na kraju, u metodi `cleanup(Context)` se iz heš mape bira samo skup sa najviše elemenata. Referentna lokacija skupa, kao i svi elementi se prikazuju na izlazu. Elementi su zbog preglednosti samo očitavanja sa senzora koja pripadaju tom skupu.
+
+Primer izlaza:
+```
+[32.882466, -117.234563]	[2.031780, 2.457509, 2.086027, 2.436246, 2.006950, 2.498900, 2.057491, 2.167026, 2.080274, 2.138992, 2.169596, 2.081357, 2.261530, 2.531129, 2.198963, 2.619804, 2.347578, 2.067516, 2.533997, 2.469944, 2.553077, 2.428680, 2.545529, 2.047766, 2.126125, 2.568496, 2.578853, 2.209051, 2.465159, 2.514485, 2.628503, 2.113009, 2.419530, 2.092362, 2.034774, 2.055202, 2.726070, 2.569663, 2.419090, 2.330864, 2.156727, 2.119523, 2.514203, 2.238154, 2.191705, 2.529372, 2.024186, 2.487336, 2.363583, 2.313552, 2.396475, 2.270248, 2.195126, 2.199230, 2.069535, 2.196051, 2.189151, 2.421333, 2.045536, 2.273849, 2.551881, 2.520372, 2.684049, 2.500901, 2.525715, 2.673258, 2.540631, 2.525412, 2.519567, 2.496687, 2.429996, 2.378320, 2.657684, 2.682784, 2.650231, 2.582649, 2.476192, 2.459081, 2.116752, 2.518011, 2.535757, 2.523841, 2.504349, 2.504515, 2.614284, 2.518233, 2.570651, 2.559228, 2.463162, 2.745002, 2.060366, 2.785243, 2.817384, 2.825640, 2.686698, 2.800566, 2.788636, 2.769874, 2.754278, 2.373089, 2.241865, 2.327761, 2.356970, 2.776504, 2.735976, ...
+```
+
+## Zadatak 4)
+
+Za potrebe prvog zadatka koriste se klase `LocationAudioMapper.java` i `LocationAudioReducer.java`.
+
+Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (accelerometer magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
+
+Dodatno, u ovom zadatku se preslikava **celokupni slog** i prosleđuje reducer klasi jer se na izlazu očekuje u tom obliku.
+
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
+
+```java
+private long MINIMAL_DISTANCE_METERS = 10 * 100;
+private double TARGET_LAT = 32.882408;
+private double TARGET_LON = -117.234661;
+
+private double TRESHOLD = 1.0;
+
+private String OUTPUT_TEMP = "temporary";
+private String OUTPUT_DONE = "analysed";
+
+@Override
+public void setup(Context context) throws IOException, InterruptedException 
+{ 
+outputs = new MultipleOutputs<Text, Text>(context);
+} 
+
+@Override
+public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+	boolean includeRecord = true;
+	String[] output = new String[8];
+
+	for (Text record : values) {
+		String[] tokens = Helpers.formTokensFromRecord(record);
+
+		if (tokens[0].equals(DATA_LOCATION)) { // Location data processing
+			double latitude = Double.parseDouble(tokens[2]);
+			double longitude = Double.parseDouble(tokens[3]);
+
+			if (Helpers.distanceInM(latitude, longitude, TARGET_LAT, TARGET_LON) > MINIMAL_DISTANCE_METERS)
+				includeRecord = false;
+
+			output[0] = tokens[0];
+			output[1] = tokens[1];
+			output[2] = tokens[2];
+			output[3] = tokens[3];
+		}
+		else if (tokens[0].equals(DATA_SENSORS)) { // Sensor data processing 
+			double audioReading = Double.parseDouble(tokens[2]);
+
+			if (Math.abs(audioReading) <= TRESHOLD)
+				includeRecord = false;
+
+			output[4] = tokens[0];
+			output[5] = tokens[1];
+			output[6] = tokens[2];
+			output[7] = tokens[3];
+		}
+	}
+
+	if (includeRecord) {
+		result.append(output[7]);
+		result.append("\n");
+	}
+
+	outputs.write(OUTPUT_TEMP, key, Arrays.toString(output));
+
+	processed.set(result.toString());
+}
+
+@Override
+public void cleanup(Context context) throws IOException, InterruptedException {
+	outputs.write(OUTPUT_DONE, null, processed);
+	outputs.close();
+}
+```
+
+Za nalaženje lokacije se uzima u obzir konstana `MINIMAL_DISTANCE_METERS`, a za filtriranje vrednosti sa audio senzora konstanta praga `TRESHOLD`.
+
+Na kraju, u metodi `cleanup(Context)` se na izlaz prosleđuju svi slogovi koji zadovoljavaju pomenute uslove. Obimnost ovih slogova ukazuje da li se lokacija `TARGET_LAT`/`TARGET_LON` može smatrati zauzetim mestom. Za razliku od prethodnih zadataka, prikazuju se slogovi u izvornom obliku sirovih očitavanja sa senzora.
+
+Primer izlaza:
+```
+[1444079161- 0.996815- 0.003529- -0.002786- 0.006496- 0.995203- 0.996825- 0.998502- 1.748756- 6.684605- 5.043970- 0.000042- 0.000364- 0.000761- 0.005429- 0.429853- 0.173685- 0.148988- 0.002331- 0.004614- -0.996790- 0.003269- 0.003521- 0.003539- 0.106920- 0.516842- 0.255494- 0.002558- 0.001510- 0.001832- 0.002531- 0.001526- 0.002196- 0.003230- 2.236059- 6.532865- 5.149616- 2.818909- 3.757026- 2.952941- 4.312930- 1.766920- 4.193949- 0.107787- 0.000412- 0.000448- -0.000541- 0.001705- 0.001987- 0.001144- -0.372543- 0.175125- -0.033004- 618.751929- 0.784768- -0.313058- 1.038986- 618.243941- 618.796487- 619.260475- 2.594321- 6.684611- 5.043589- 0.000015- 0.000103- 0.000070- 0.000684- 0.429649- 2.430594- 0.131063- 223.246192- 97.503453- -568.776302- 1.009838- 0.827983- 0.769873- -0.069913- 0.046582- 0.021992- 0.999996- 0.999996- 0.999996- 0.999996- 0.999995- 1032.508157- 17.195149- 12.121621- 25.390972- 1024.812178- 1033.146650- 1041.537325- 2.220749- 6.214470- 5.045673- 0.004896- 0.023827- 0.022606- 0.083165- 0.432260- 2.533760- 0.114619- -0.592000- -55.824000- -1030.912000- 9.109201- 9.684680- 17.198147- -0.045248- -0.117629- 0.028053- 4.775776- 4.820572- 5.866857- 4.938766- 5.503634- 5.034010- 1.224514- 1.730564- 1.093057- 1.796074- 5.045700- 0.004994- 0.023702- 0.022539- 0.083756- 0.999849- 0.999835- 0.999836- 0.999832- 0.999819- nan- nan- nan- nan- nan- nan- nan- nan- nan- 4.000000- 0.064895- 0.070473- 108.230255- 108.239944- nan- nan- 65.000000- 10.000000- 10.102999- 2.312832- 0.000029- 0.000032- -0.000067- -0.000073- 0.000111- 0.000120- -4.219657- -0.012806- -1.298291- 0.094373- -1.220977- -0.851300- -1.656516- -0.898563- -0.503573- -0.518072- -0.907876- -0.681724- -0.683515- 2.276349- 1.271966- 1.177478- 0.670053- 0.389200- 0.535904- 0.468701- 0.358315- 0.401412- 0.408432- 0.277176- 0.416881- 0.263832- -2.605413- 2.605549- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 1.000000- 0.000000- 0.000000- nan- nan- nan- 0.000000- nan- 0.460000- 0.381436- nan- 0.000000- 0.000000- 0.000000- 1.000000- 1.000000- 0.000000[1444079161- 0.996815- 0.003529- -0.002786- 0.006496- 0.995203- 0.996825- 0.998502- 1.748756- 6.684605- 5.043970- 0.000042- 0.000364- 0.000761- 0.005429- 0.429853- 0.173685- 0.148988- 0.002331- 0.004614- -0.996790- 0.003269- 0.003521- 0.003539- 0.106920- 0.516842- 0.255494- 0.002558- 0.001510- 0.001832- 0.002531- 0.001526- 0.002196- 0.003230- 2.236059- 6.532865- 5.149616- 2.818909- 3.757026- 2.952941- 4.312930- 1.766920- 4.193949- 0.107787- 0.000412- 0.000448- -0.000541- 0.001705- 0.001987- 0.001144- -0.372543- 0.175125- -0.033004- 618.751929- 0.784768- -0.313058- 1.038986- 618.243941- 618.796487- 619.260475- 2.594321- 6.684611- 5.043589- 0.000015- 0.000103- 0.000070- 0.000684- 0.429649- 2.430594- 0.131063- 223.246192- 97.503453- -568.776302- 1.009838- 0.827983- 0.769873- -0.069913- 0.046582- 0.021992- 0.999996- 0.999996- 0.999996- 0.999996- 0.999995- 1032.508157- 17.195149- 12.121621- 25.390972- 1024.812178- 1033.146650- 1041.537325- 2.220749- 6.214470- 5.045673- 0.004896- 0.023827- 0.022606- 0.083165- 0.432260- 2.533760- 0.114619- -0.592000- -55.824000- -1030.912000- 9.109201- 9.684680- 17.198147- -0.045248- -0.117629- 0.028053- 4.775776- 4.820572- 5.866857- 4.938766- 5.503634- 5.034010- 1.224514- 1.730564- 1.093057- 1.796074- 5.045700- 0.004994- 0.023702- 0.022539- 0.083756- 0.999849- 0.999835- 0.999836- 0.999832- 0.999819- nan- nan- nan- nan- nan- nan- nan- nan- nan- 4.000000- 0.064895- 0.070473- 108.230255- 108.239944- nan- nan- 65.000000- 10.000000- 10.102999- 2.312832- 0.000029- 0.000032- -0.000067- -0.000073- 0.000111- 0.000120- -4.219657- -0.012806- -1.298291- 0.094373- -1.220977- -0.851300- -1.656516- -0.898563- -0.503573- -0.518072- -0.907876- -0.681724- -0.683515- 2.276349- 1.271966- 1.177478- 0.670053- 0.389200- 0.535904- 0.468701- 0.358315- 0.401412- 0.408432- 0.277176- 0.416881- 0.263832- -2.605413- 2.605549- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0.000000- 0.000000- 1.000000- 0.000000- 1.000000- 0.000000- 0.000000- nan- nan- nan- 0.000000- nan- 0.460000- 0.381436- nan- 0.000000- 0.000000- 0.000000- 1.000000- 1.000000- 0.000000- 0.000000- 0.000000- 0- 1- 0- nan- nan- 0- nan- 0- 1- 1- nan- nan- nan- 0- nan- nan- 0- nan- nan- nan- 0- 0- nan- nan- 0- 0- nan- nan- 0- nan- nan- nan- nan- nan- nan- 0- 0- nan- nan- 0- nan- nan- nan- nan- 0- nan- nan- nan- 1- 1- nan- 2]
+...
+```

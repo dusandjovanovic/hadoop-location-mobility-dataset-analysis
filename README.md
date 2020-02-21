@@ -251,3 +251,121 @@ Deljena ponašanja koja se koriste u različitim mapper ili reducer klasama su s
       * može ili ne mora na kraj niza da preslika ceo izvorni slog
 
 ## Zadatak 1)
+
+Za potrebe prvog zadatka koriste se klase `LocationMobilityMapper.java` i `LocationMobilityReducer.java`.
+
+```java
+private int[] DATASET_COLUMNS = { 196 };
+
+@Override
+public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+	StringBuilder sb = new StringBuilder();
+	String fileName = ((FileSplit) context.getInputSplit()).getPath().getName();
+	String uuid = fileName.substring(0, fileName.indexOf('.'));
+	String[] tokens = value.toString().split(",");
+	String timestamp = tokens[0];
+
+	boolean includeRecord = true;
+
+	includeRecord = Helpers.formStringFromTokens(tokens, DATASET_COLUMNS, sb, uuid, false);
+
+	if (includeRecord) {
+		record = new LongWritable(Long.parseLong(timestamp));
+		word.set(sb.toString());
+		context.write(record, word);
+	}
+}
+```
+
+Mapper treba da obezbedi potrebne podatke reducer-u. Korišćenjem pomoćne metode izvlače se timestamp, uuid, lat/lng koordinate i token sa rednim brojem 196 zadat konstantom `DATASET_COLUMNS`. U slučaju beležnika lokacija postoji prefiks `DATA_LOCATION`, a u slučaju skupa podataka senzora `DATA_SENSORS`. Implementacioni detalji izvlačenja neophodnih tokena mogu se pogledati u prethono objašnjenoj metodi `Helpers.formStringFromTokens`.
+
+Ključ koji će se koristiti u reducer klasi je **timestamp** vrednost s obzirom da treba okupiti lokacione podatke i podatke sa senzora koji odgovaraju istoj vremenskoj vrednosti.
+
+U kodu koji sledi dat je pregled ključnog ponašanja reducer klase. Može se videti da je klasa u potpunosti konfigurabilna zahvaljujući konstantama. `MINIMAL_DISTANCE_METERS` određuje minimalo potrebno rastojanje u metrima između dve tačke. `MINIMAL_TIMEOFFSET_HOURS` određuje minimalnu razliku u satima između dve timestamp vrednosti. Konstane koje počinju prefiksom `TARGET` ukazuju na ciljne vrednosti. Tokeni se zatim izvlače i upoređuju sa ovim konstantama kako bi se odredila njihova pripadnos rešenju.
+
+```java
+private final String DATA_LOCATION = "DATA_LOCATION";
+private final String DATA_SENSORS = "DATA_SENSORS";
+
+private long MINIMAL_DISTANCE_METERS = 10 * 1000;
+private long MINIMAL_TIMEOFFSET_HOURS = 90 * 24;
+
+private long TARGET_TIMESTAMP = 1449601597;
+private double TARGET_LAT = 32.882408;
+private double TARGET_LON = -117.234661;
+
+private String OUTPUT_TEMP = "temporary";
+private String OUTPUT_DONE = "analysed";
+
+@Override
+public void setup(Context context) throws IOException, InterruptedException {
+	outputs = new MultipleOutputs<Text, Text>(context);
+}
+
+@Override
+public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+	boolean includeRecord = true;
+	String[] output = new String[7];
+
+	for (Text record : values) {
+		String[] tokens = Helpers.formTokensFromRecord(record);
+
+		if (tokens[0].equals(DATA_LOCATION)) { // Location data processing
+			long timestamp = key.get();
+			double latitude = Double.parseDouble(tokens[2]);
+			double longitude = Double.parseDouble(tokens[3]);
+
+			if (Helpers.distanceInM(latitude, longitude, TARGET_LAT, TARGET_LON) > MINIMAL_DISTANCE_METERS)
+				includeRecord = false;
+			if (Helpers.differenceTimeH(timestamp, TARGET_TIMESTAMP) > MINIMAL_TIMEOFFSET_HOURS)
+				includeRecord = false;
+
+			output[0] = tokens[0];
+			output[1] = tokens[1];
+			output[2] = tokens[2];
+			output[3] = tokens[3];
+		}
+		else if (tokens[0].equals(DATA_SENSORS)) { // Sensor data processing 
+			double batteryStateIsCharging = Double.parseDouble(tokens[2]);
+
+			if (batteryStateIsCharging == 0.0)
+				includeRecord = false;
+
+			output[4] = tokens[0];
+			output[5] = tokens[1];
+			output[6] = tokens[2];
+		}
+	}
+
+	if (includeRecord) {
+		result.append(Arrays.toString(output));
+		result.append("\n");
+	}
+
+	outputs.write(OUTPUT_TEMP, key, Arrays.toString(output));
+
+	processed.set(result.toString());
+}
+
+@Override
+public void cleanup(Context context) throws IOException, InterruptedException {
+	outputs.write(OUTPUT_DONE, null, processed);
+	outputs.close();
+}
+```
+
+Može se videti da se formirani niz Stringova `output` formira iz dva koraka. Prvo se za isti ključ, odnosno timestamp vrednost, posmatraju lokacione vrednosti i upoređuju sa ciljnim konstantama. Zatim, isto važi i za prikupljenu vrednost sa senozra. U ovom slučaju to je vrednost `battery_state_is_charging` i samo ukoliko je pozitivna slog se smatra relevantnim - što je i cilj ovog zadatka.
+
+Promenljiva `includeRecord` se vezuje za svaki ključ i nakon obrade lokacionih/senzorskih podataka ukazuje na to da li taj slog treba uvrstiti u rezultat. Zbog preglednosti nije preslikan ceo slog već samo ključni podaci koji pristižu sa reducer-a.
+
+Primer izlaza:
+```
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882134, -117.234553, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882134, -117.234553, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882444, -117.234586, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882458, -117.234607, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884762, -117.243499, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884762, -117.243505, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884767, -117.243477, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
+...
+```

@@ -369,3 +369,5 @@ Primer izlaza:
 [DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884767, -117.243477, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
 ...
 ```
+
+Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom i vrednosnu relevantnu jednom očitavanju senzora - svi relevantni podaci su prikazani na izlazu. 

@@ -692,7 +692,7 @@ Primer izlaza:
 ...
 ```
 
-## Zadatak 4)
+## Zadatak 5)
 
 Za potrebe petog zadatka koriste se klase `LocationDistributedCacheMapper.java` i `LocationDistributedCacheReducer.java`.
 
@@ -823,3 +823,4 @@ Primer izlaza:
 ...
 ```
 
+## Zadatak 6)

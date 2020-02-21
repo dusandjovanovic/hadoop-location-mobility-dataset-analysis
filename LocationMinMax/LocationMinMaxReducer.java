@@ -30,8 +30,8 @@ extends Reducer<LongWritable, Text, Text, Text> {
 	private TreeMap<Double, String> tmap; 
 	private Double minValue = 999.99;
 	private Double maxValue = 0.0;
-	private double avgValue = 0.0;
-	private double countValue = 0.0;
+	private Double avgValue = 0.0;
+	private Double countValue = 0.0;
 	private int N = 20;
 	
 	private String OUTPUT_TEMP = "temporary";
@@ -103,10 +103,10 @@ extends Reducer<LongWritable, Text, Text, Text> {
     public void cleanup(Context context) throws IOException, InterruptedException 
     {
 		avgValue /= countValue;
-		Double avg = avgValue;
 		outputs.write(OUTPUT_DONE, new Text("MIN_VALUE"), new Text(minValue.toString()));
 		outputs.write(OUTPUT_DONE, new Text("MAX_VALUE"), new Text(maxValue.toString()));
-		outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avg.toString()));
+		outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avgValue.toString()));
+		outputs.write(OUTPUT_DONE, new Text("ATTRIBUTE_COUNT"), new Text(countValue.toString()));
 
         for (Map.Entry<Double, String> entry : tmap.entrySet())  
         { 

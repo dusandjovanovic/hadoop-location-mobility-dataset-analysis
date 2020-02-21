@@ -17,6 +17,7 @@ extends Reducer<LongWritable, Text, Text, Text> {
 	private MultipleOutputs<Text, Text> outputs;
 	
 	private Text processed = new Text();
+	private Long processedCount = (long) 0.0;
 	
 	private final String DATA_LOCATION = "DATA_LOCATION";
 	private final String DATA_SENSORS = "DATA_SENSORS";
@@ -72,6 +73,7 @@ extends Reducer<LongWritable, Text, Text, Text> {
 		}
 		
 		if (includeRecord) {
+			processedCount++;
 			result.append(Arrays.toString(output));
 			result.append("\n");
 		}
@@ -83,6 +85,7 @@ extends Reducer<LongWritable, Text, Text, Text> {
 
 	@Override
 	public void cleanup(Context context) throws IOException, InterruptedException {
+		outputs.write(OUTPUT_DONE, new Text("FOUND_RECORDS"), new Text(processedCount.toString()));
 		outputs.write(OUTPUT_DONE, null, processed);
 		outputs.close();
 	}

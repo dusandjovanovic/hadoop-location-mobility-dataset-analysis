@@ -531,7 +531,7 @@ Za potrebe trećeg zadatka koriste se klase `LocationAccelerometerMapper.java` i
 
 Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (**accelerometer magnitude** vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
 
-Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir **podaci svih vremenskih izvora**.
 
 ```java
 private long MINIMAL_DISTANCE_METERS = 10 * 100;
@@ -618,7 +618,7 @@ public void cleanup(Context context) throws IOException, InterruptedException
 } 
 ```
 
-Za nalaženje lokacije se uzima u obzir konstana `MINIMAL_DISTANCE_METERS`, a za filtriranje vrednosti sa senzora akcelerometra konstanta praga `TRESHOLD`. Logika se bazira na tome da treba naći skupove "bliskih" očitavanja podataka. Odnosno, ako viže slogova različitih ključeva postoje uokviru prečnika `MINIMAL_DISTANCE_METERS` oni će činiti jedan skup.
+Za nalaženje lokacije se uzima u obzir konstana `MINIMAL_DISTANCE_METERS`, a za filtriranje vrednosti sa senzora akcelerometra konstanta praga `TRESHOLD`. Logika se bazira na tome da treba naći **skupove "bliskih" očitavanja podataka**. Odnosno, ako viže slogova različitih ključeva postoje uokviru prečnika `MINIMAL_DISTANCE_METERS` oni će činiti jedan skup. Pritom, prvi pronađeni slog koji ne pripada nijednom skupu će biti referentni slog tog skupa, odnosno epicentar.
 
 Na kraju, u metodi `cleanup(Context)` se iz heš mape bira samo skup sa najviše elemenata. Referentna lokacija skupa, kao i svi elementi se prikazuju na izlazu. Elementi su zbog preglednosti samo očitavanja sa senzora koja pripadaju tom skupu.
 
@@ -627,15 +627,17 @@ Primer izlaza:
 [32.882466, -117.234563]	[2.031780, 2.457509, 2.086027, 2.436246, 2.006950, 2.498900, 2.057491, 2.167026, 2.080274, 2.138992, 2.169596, 2.081357, 2.261530, 2.531129, 2.198963, 2.619804, 2.347578, 2.067516, 2.533997, 2.469944, 2.553077, 2.428680, 2.545529, 2.047766, 2.126125, 2.568496, 2.578853, 2.209051, 2.465159, 2.514485, 2.628503, 2.113009, 2.419530, 2.092362, 2.034774, 2.055202, 2.726070, 2.569663, 2.419090, 2.330864, 2.156727, 2.119523, 2.514203, 2.238154, 2.191705, 2.529372, 2.024186, 2.487336, 2.363583, 2.313552, 2.396475, 2.270248, 2.195126, 2.199230, 2.069535, 2.196051, 2.189151, 2.421333, 2.045536, 2.273849, 2.551881, 2.520372, 2.684049, 2.500901, 2.525715, 2.673258, 2.540631, 2.525412, 2.519567, 2.496687, 2.429996, 2.378320, 2.657684, 2.682784, 2.650231, 2.582649, 2.476192, 2.459081, 2.116752, 2.518011, 2.535757, 2.523841, 2.504349, 2.504515, 2.614284, 2.518233, 2.570651, 2.559228, 2.463162, 2.745002, 2.060366, 2.785243, 2.817384, 2.825640, 2.686698, 2.800566, 2.788636, 2.769874, 2.754278, 2.373089, 2.241865, 2.327761, 2.356970, 2.776504, 2.735976, ...
 ```
 
+Na izlazu se dakle prvo može videti par geografske dužine i širine referentnog elementa skupa - što predstavlja najgušću lokaciju. Zatim, u nizu se mogu videti i sva očitavanja senzora iz tog skupa. Ova očitavanja realno predstavljaju sve uređaje koji su dovoljno blizu referentnog elementa skupa i pritom imaju visoke očitane vrednosti atributa.
+
 ## Zadatak 4)
 
 Za potrebe četvrtog zadatka koriste se klase `LocationAudioMapper.java` i `LocationAudioReducer.java`.
 
-Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (accelerometer magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
+Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (audio magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
 
-Dodatno, u ovom zadatku se preslikava **celokupni slog** i prosleđuje reducer klasi jer se na izlazu očekuje u tom obliku.
+Dodatno, u ovom zadatku se preslikava **celokupni slog** u poslednji token i prosleđuje reducer klasi jer se na izlazu očekuje u tom obliku.
 
-Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir **podaci svih vremenskih izvora**.
 
 ```java
 private long MINIMAL_DISTANCE_METERS = 10 * 100;
@@ -713,11 +715,13 @@ Primer izlaza:
 ...
 ```
 
+Dakle, za izabranu lokaciju, na izlazu treba dostaviti **celokupne slogove** sa svim senzorskim očitavanjima. Pritom se uzimaju u obzir samo oni slogovi koji su relativno blizu navedene referentne lokacije.
+
 ## Zadatak 5)
 
 Za potrebe petog zadatka koriste se klase `LocationDistributedCacheMapper.java` i `LocationDistributedCacheReducer.java`.
 
-Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači tri kolona senzora i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za nalaženje korelacije između keširanog dataseta, pre svega koriste se vresnoti lokacionih atributa.
+Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se izvlači **tri kolona senzora** i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za **nalaženje korelacije sa keširanim dataset-om**, pre svega koriste se vresnoti lokacionih atributa.
 
 Dalje, da bi se koristilo keširanje i distribuiranje stranog dataseta do svakog čvora, koristi se podešavanje okruženja:
 
@@ -735,7 +739,7 @@ catch (Exception e) {
 
 Datoteka `insurance_data_sample.csv` je strani dataset koji između ostalog sadrži i slogove koji su relativno blizu lokacijama izvornog dataseta. Ideja je u rezultat uvrstiti kombinovane slogove koji su u **lokacionoj korelaciji**. A pritom, i navesti kombinacije atributa koje su prepoznate na tim lokacijama.
 
-Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir **podaci svih vremenskih izvora**.
 
 ```java
 private long MINIMAL_DISTANCE_METERS = 1000 * 1000;
@@ -827,7 +831,7 @@ public void cleanup(Context context) throws IOException, InterruptedException {
 }
 ```
 
-Za nalaženje lokacije se uzima u obzir konstana `MINIMAL_DISTANCE_METERS`. Pritom se traže poklapanja sa svakim slogom keširanog dataset-a. Ukoliko ovakva poklapanja postoje, slogovi se kombinuju i treba ih uključiti na izlazu.
+Za nalaženje lokacione zavisnosti uzima se u obzir konstana `MINIMAL_DISTANCE_METERS`. Pritom se traže poklapanja sa svakim slogom keširanog dataset-a. Ukoliko ovakva poklapanja postoje, slogovi se kombinuju i treba ih uključiti na izlazu. Svaki kombinovani slog koji se nađe na izlazu će uključivati obe bliske lokacije koje su u korelaciji, kao i **vrednosti očitanih atributa iz oba dataset-a**.
 
 Na kraju, u metodi `cleanup(Context)` se na izlaz prosleđuju sve kombinacije slogova za koje se može reći da su relativno blizu. Svaki elemenat izlaza kombinuje tokene iz oba dataset-a što potencijalno može nagoveštavati korelaciju podataka.
 
@@ -843,5 +847,9 @@ Primer izlaza:
 [DATA_LOCATION, 00EABED2-271D-49D8-B599-1D4A09240601, 32.882425, -117.234608, 28.06444, -82.77459, Residential, Masonry, DATA_SENSORS, 00EABED2-271D-49D8-B599-1D4A09240601, 0.001175, -0.524412, 0.008613]
 ...
 ```
+
+Na primeru prvog sloga izlaza, `DATA_SENSORS, 00EABED2-271D-49D8-B599-1D4A09240601, 0.001144, -0.372543, 0.175125` predstavlja očitavnja senzora izvornog dataseta. Sa druge strane, `28.06444, -82.77459, Residential, Masonry` potiče iz keširanog dataset-a.
+
+Kako je ovo pokazni primer, konstanta koja određuje da li su dve tačke dovoljno blizu je visoka, odnosno `MINIMAL_DISTANCE_METERS` je 1000km. U pokazanom slogu distanca u km između `(32.882408, -117.234661)` i `(28.06444, -82.77459)` je 535km što je po konfiguraciji klase dovoljno blizu i može se smatrati da su **slogovi u korelaciji**. Ponovo, ovo je pokazni primer edukativnog karaktera, u realnim analizama bi granična vrednost koja diktira korelaciju bila znatno manja od 1000km.
 
 ## Zadatak 6)

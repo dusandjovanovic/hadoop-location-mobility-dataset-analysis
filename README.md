@@ -69,7 +69,7 @@ Za svaki od zadataka postoji poseban `package`, opisno direktorijum, u kome se n
 ```
 /
   Helpers/
-      Helpers.class
+      Helpers.java
   LocationAccelerometer/
       LocationAccelerometerMapper.java
       LocationAccelerometerReducer.java
@@ -252,6 +252,8 @@ Deljena ponašanja koja se koriste u različitim mapper ili reducer klasama su s
 
 ## Zadatak 1)
 
+> Odrediti broj slogova (pojava, torki, događaja) čiji atributi zadovoljavaju određeni uslov i registrovani su na određenoj lokaciji u datom vremenu.
+
 Za potrebe prvog zadatka koriste se klase `LocationMobilityMapper.java` i `LocationMobilityReducer.java`.
 
 ```java
@@ -388,6 +390,8 @@ FOUND_RECORDS	931
 Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom i vrednosnu relevantnu jednom očitavanju senzora - svi relevantni podaci su prikazani na izlazu. **`FOUND_RECORDS`** vrednost je rešenje postavljenog problema.
 
 ## Zadatak 2)
+
+> Naći minimalne, maksimalne, srednje vrednosti određenog atributa, broj pojavljivanja, kao i top N slogova (pojava, torki, događaja) na zadatoj lokaciji i/ili vremenu po uslovu definisanom nad atributima.
 
 Za potrebe drugog zadatka koriste se klase `LocationMinMaxMapper.java` i `LocationMinMaxReducer.java`.
 
@@ -527,6 +531,8 @@ Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vrem
 
 ## Zadatak 3)
 
+> Naći lokaciju (sa određenim prečnikom) na kojoj se nalazi najveći broj uređaja sa visokim očitavanjima magnitude (parametra senzora accelerometer) u svim vremenskim periodima – može da se protumači kao mesto na kome se najviše koriste mobilni uređaji.
+
 Za potrebe trećeg zadatka koriste se klase `LocationAccelerometerMapper.java` i `LocationAccelerometerReducer.java`.
 
 Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (**accelerometer magnitude** vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
@@ -631,6 +637,8 @@ Na izlazu se dakle prvo može videti par geografske dužine i širine referentno
 
 ## Zadatak 4)
 
+> Odrediti skup slogova koji zadovoljavaju uslov viskog očitavanja zvuka (sa određenom donjom granicom), odnosno parametra audio_magnitude na određenoj lokaciji u svim vremenskim periodima -  može da se protumači kao ispitivanje da li je konkretna lokacija bučno i zauzeto mesto.
+
 Za potrebe četvrtog zadatka koriste se klase `LocationAudioMapper.java` i `LocationAudioReducer.java`.
 
 Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (audio magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
@@ -718,6 +726,8 @@ Primer izlaza:
 Dakle, za izabranu lokaciju, na izlazu treba dostaviti **celokupne slogove** sa svim senzorskim očitavanjima. Pritom se uzimaju u obzir samo oni slogovi koji su relativno blizu navedene referentne lokacije.
 
 ## Zadatak 5)
+
+> Napraviti korelaciju izabranih podataka sa podacima, u okviru dataseta ili iz eksternog izvora (npr. sa http://download.geofabrik.de/) koji su u prostorno-vremenskoj vezi sa prethodnim, i koji bi bili prosleđeni mehanizmom distribuiranog keša.
 
 Za potrebe petog zadatka koriste se klase `LocationDistributedCacheMapper.java` i `LocationDistributedCacheReducer.java`.
 
@@ -853,3 +863,5 @@ Na primeru prvog sloga izlaza, `DATA_SENSORS, 00EABED2-271D-49D8-B599-1D4A092406
 Kako je ovo pokazni primer, konstanta koja određuje da li su dve tačke dovoljno blizu je visoka, odnosno `MINIMAL_DISTANCE_METERS` je 1000km. U pokazanom slogu distanca u km između `(32.882408, -117.234661)` i `(28.06444, -82.77459)` je 535km što je po konfiguraciji klase dovoljno blizu i može se smatrati da su **slogovi u korelaciji**. Ponovo, ovo je pokazni primer edukativnog karaktera, u realnim analizama bi granična vrednost koja diktira korelaciju bila znatno manja od 1000km.
 
 ## Zadatak 6)
+
+> Aplikaciju testirati na klasteru računara i evaluirati rad aplikacije na različitom broju računara u klasteru.

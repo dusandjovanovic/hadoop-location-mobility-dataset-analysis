@@ -371,3 +371,135 @@ Primer izlaza:
 ```
 
 Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom i vrednosnu relevantnu jednom očitavanju senzora - svi relevantni podaci su prikazani na izlazu. 
+
+## Zadatak 2)
+
+Za potrebe prvog zadatka koriste se klase `LocationMinMaxMapper.java` i `LocationMinMaxReducer.java`.
+
+Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za selekciju u mepper klasi - po svojoj vrednosti.
+
+Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je takođe konfigurabilna i sadrži iste konstane poput prošle uz dodatu `N` vrednost koja određuje koliko top-elemenata će biti uključeno u rezultat.
+
+```java
+private TreeMap<Double, String> tmap; 
+private Double minValue = 999.99;
+private Double maxValue = 0.0;
+private double avgValue = 0.0;
+private double countValue = 0.0;
+private int N = 20;
+
+private String OUTPUT_TEMP = "temporary";
+private String OUTPUT_DONE = "analysed";
+
+@Override
+public void setup(Context context) throws IOException, InterruptedException 
+{ 
+outputs = new MultipleOutputs<Text, Text>(context);
+tmap = new TreeMap<Double, String>();
+} 
+
+@Override
+public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+	boolean includeRecord = true;
+	String[] output = new String[7];
+
+	for (Text record : values) {
+		String[] tokens = Helpers.formTokensFromRecord(record);
+
+		if (tokens[0].equals(DATA_LOCATION)) { // Location data processing
+			long timestamp = key.get();
+			double latitude = Double.parseDouble(tokens[2]);
+			double longitude = Double.parseDouble(tokens[3]);
+
+			if (Helpers.distanceInM(latitude, longitude, TARGET_LAT, TARGET_LON) > MINIMAL_DISTANCE_METERS)
+				includeRecord = false;
+			if (Helpers.differenceTimeH(timestamp, TARGET_TIMESTAMP) > MINIMAL_TIMEOFFSET_HOURS)
+				includeRecord = false;
+
+			output[0] = tokens[0];
+			output[1] = tokens[1];
+			output[2] = tokens[2];
+			output[3] = tokens[3];
+		}
+		else if (tokens[0].equals(DATA_SENSORS)) { // Sensor data processing 				
+			output[4] = tokens[0];
+			output[5] = tokens[1];
+			output[6] = tokens[2];
+		}
+	}
+
+	if (includeRecord) {
+		try {
+			double magnitudeSpectrumEneryBand = Double.parseDouble(output[6]);
+
+			if (magnitudeSpectrumEneryBand < minValue)
+				minValue = magnitudeSpectrumEneryBand;
+			if (magnitudeSpectrumEneryBand > maxValue)
+				maxValue = magnitudeSpectrumEneryBand;
+
+			avgValue += magnitudeSpectrumEneryBand;
+			countValue++;
+
+			tmap.put(magnitudeSpectrumEneryBand, Arrays.toString(output));
+
+			if (tmap.size() > N)
+		    tmap.remove(tmap.firstKey()); 
+		}
+		catch (Exception err) {
+			System.err.println(err.toString());
+		}
+	}
+
+	outputs.write(OUTPUT_TEMP, key, Arrays.toString(output));
+}
+
+@Override
+public void cleanup(Context context) throws IOException, InterruptedException 
+{
+	avgValue /= countValue;
+	Double avg = avgValue;
+	outputs.write(OUTPUT_DONE, new Text("MIN_VALUE"), new Text(minValue.toString()));
+	outputs.write(OUTPUT_DONE, new Text("MAX_VALUE"), new Text(maxValue.toString()));
+	outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avg.toString()));
+
+for (Map.Entry<Double, String> entry : tmap.entrySet())  
+{ 
+	Text tokens = new Text(entry.getValue());
+	Text magnitude_value = new Text(entry.getKey().toString());
+	outputs.write(OUTPUT_DONE, magnitude_value, tokens);
+}
+
+outputs.close();
+} 
+```
+
+Za potrebe nalaženja top-N elemenata reducer prikupljene podatke smešta u `TreeMap` strukturu sa ograničenom dužinom od N. Maksimalna, minimalna i srednja vrednost se računaju uzimajući u obzir svaki slog. Na kraju, u override-ovanoj metodi `cleanup(Context)` se vrši punjenje izlaza.
+
+Primer izlaza:
+```
+MIN_VALUE	0.0
+MAX_VALUE	3.467959
+AVG_VALUE	0.22254551741862044
+2.360237	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880849, -117.237451, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.360237]
+2.36092	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884160, -117.241318, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.360920]
+2.38021	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.881373, -117.238617, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.380210]
+2.382824	[DATA_LOCATION, 00EABED2-271D-49D8-B599-1D4A09240601, 32.882591, -117.234693, DATA_SENSORS, 00EABED2-271D-49D8-B599-1D4A09240601, 2.382824]
+2.409278	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.881127, -117.237852, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.409278]
+2.411022	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880441, -117.237178, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.411022]
+2.456913	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884798, -117.243554, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.456913]
+2.5041	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884820, -117.243504, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.504100]
+2.511466	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884776, -117.243476, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.511466]
+2.542937	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884793, -117.243524, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.542937]
+2.547586	[DATA_LOCATION, 00EABED2-271D-49D8-B599-1D4A09240601, 32.882422, -117.234651, DATA_SENSORS, 00EABED2-271D-49D8-B599-1D4A09240601, 2.547586]
+2.575053	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.881049, -117.237824, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.575053]
+2.61373	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884783, -117.243506, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.613730]
+2.718203	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884646, -117.242512, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.718203]
+2.760866	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880010, -117.235893, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.760866]
+2.777368	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880049, -117.235895, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.777368]
+3.015119	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884847, -117.243528, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 3.015119]
+3.236268	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880251, -117.238169, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 3.236268]
+3.291168	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.883719, -117.241701, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 3.291168]
+3.467959	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884801, -117.243485, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 3.467959]
+```
+
+Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom se po vrednosti izabranog atributa nalaze u top-N skupu.

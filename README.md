@@ -3,12 +3,12 @@
 Ulazni dataset je preuzet sa linka - http://extrasensory.ucsd.edu/.
 
 Razviti i testirati/evaluirati Hadoop aplikaciju koja će na osnovu raspoloživih podataka:
-1. Odrediti broj slogova (pojava, torki, događaja) čiji atributi zadovoljavaju određeni uslov i registrovani su na određenoj lokaciji u datom vremenu
-2. Naći minimalne, maksimalne, srednje vrednosti određenog atributa, broj pojavljivanja, kao i top N slogova (pojava, torki, događaja) na zadatoj lokaciji i/ili vremenu po uslovu definisanom nad atributima
+1. Odrediti broj slogova (pojava, torki, događaja) čiji atributi zadovoljavaju određeni uslov i registrovani su na određenoj lokaciji u datom vremenu.
+2. Naći minimalne, maksimalne, srednje vrednosti određenog atributa, broj pojavljivanja, kao i top N slogova (pojava, torki, događaja) na zadatoj lokaciji i/ili vremenu po uslovu definisanom nad atributima.
 3. Naći lokaciju (sa određenim prečnikom) na kojoj se nalazi najveći broj uređaja sa visokim očitavanjima magnitude (parametra senzora accelerometer) u svim vremenskim periodima – može da se protumači kao mesto na kome se najviše koriste mobilni uređaji.
 4. Odrediti skup slogova koji zadovoljavaju uslov viskog očitavanja zvuka (sa određenom donjom granicom), odnosno parametra audio_magnitude na određenoj lokaciji u svim vremenskim periodima -  može da se protumači kao ispitivanje da li je konkretna lokacija bučno i zauzeto mesto.
 5. Napraviti korelaciju izabranih podataka sa podacima, u okviru dataseta ili iz eksternog izvora (npr. sa http://download.geofabrik.de/) koji su u prostorno-vremenskoj vezi sa prethodnim, i koji bi bili prosleđeni mehanizmom distribuiranog keša.
-6. Aplikaciju testirati na klasteru računara i evaluirati rad aplikacije na različitom broju računara u klasteru
+6. Aplikaciju testirati na klasteru računara i evaluirati rad aplikacije na različitom broju računara u klasteru.
 
 ## Pregled dataset-a
 
@@ -279,11 +279,21 @@ public void map(Object key, Text value, Context context) throws IOException, Int
 
 Mapper treba da obezbedi potrebne podatke reducer-u. Korišćenjem pomoćne metode izvlače se timestamp, uuid, lat/lng koordinate i token sa rednim brojem 196 zadat konstantom `DATASET_COLUMNS`. U slučaju beležnika lokacija postoji prefiks `DATA_LOCATION`, a u slučaju skupa podataka senzora `DATA_SENSORS`. Implementacioni detalji izvlačenja neophodnih tokena mogu se pogledati u prethono objašnjenoj metodi `Helpers.formStringFromTokens`.
 
-Ključ koji će se koristiti u reducer klasi je **timestamp** vrednost s obzirom da treba okupiti lokacione podatke i podatke sa senzora koji odgovaraju istoj vremenskoj vrednosti.
+Ključ koji će se koristiti u reducer klasi je **timestamp** vrednost s obzirom da treba okupiti lokacione podatke i podatke sa senzora koji odgovaraju istoj vremenskoj vrednosti. To znači da će reducer klasa uz istu vrednost timestamp-a, odnosno ključa, imati skup vrednosti lokacionih podataka i drugi odvojeni skup vrednosti podataka očitanih sa senzora.
 
-U kodu koji sledi dat je pregled ključnog ponašanja reducer klase. Može se videti da je klasa u potpunosti konfigurabilna zahvaljujući konstantama. `MINIMAL_DISTANCE_METERS` određuje minimalo potrebno rastojanje u metrima između dve tačke. `MINIMAL_TIMEOFFSET_HOURS` određuje minimalnu razliku u satima između dve timestamp vrednosti. Konstane koje počinju prefiksom `TARGET` ukazuju na ciljne vrednosti. Tokeni se zatim izvlače i upoređuju sa ovim konstantama kako bi se odredila njihova pripadnos rešenju.
+`[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880849, -117.237451], 
+[DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.360237]`
+
+Ovo je primer dva sloga koji u prikazanom obliku stižu do reducer-a. Konstante `DATA_SENSORS` i `DATA_LOCATION` opisuju podatke koji dolaze sa različitih izvora i početni su tokeni ovih slogova. Ova dva sloga se vezuju za isti `LongWritable` ključ koji, kao što je več pomenuto, predstavlja timestamp vrednost.
+
+U kodu koji sledi dat je pregled ključnog ponašanja reducer klase. Može se videti da je klasa u potpunosti konfigurabilna zahvaljujući konstantama. `MINIMAL_DISTANCE_METERS` određuje minimalo potrebno rastojanje u metrima između dve tačke. `MINIMAL_TIMEOFFSET_HOURS` određuje minimalnu razliku u satima između dve timestamp vrednosti. Konstane koje počinju prefiksom `TARGET` ukazuju na ciljne vrednosti. Tokeni se zatim izvlače i upoređuju sa ovim konstantama kako bi se odredila njihova pripadnost rešenju.
+
+Pomoćnim metodama `Helpers.distanceInM` i `Helpers.differenceTimeH` se izdvojene vrednosti tokena upoređuju sa ciljnim vrednostima i utvrđuje da li slog treba da bude uključen u rezultat ili ne. Treba za slog takođe proveriti i izabranu kolonu senzorskih očitavanja.
 
 ```java
+private Text processed = new Text();
+private Long processedCount = (long) 0.0;
+
 private final String DATA_LOCATION = "DATA_LOCATION";
 private final String DATA_SENSORS = "DATA_SENSORS";
 
@@ -338,6 +348,7 @@ public void reduce(LongWritable key, Iterable<Text> values, Context context) thr
 	}
 
 	if (includeRecord) {
+		processedCount++;
 		result.append(Arrays.toString(output));
 		result.append("\n");
 	}
@@ -349,6 +360,7 @@ public void reduce(LongWritable key, Iterable<Text> values, Context context) thr
 
 @Override
 public void cleanup(Context context) throws IOException, InterruptedException {
+	outputs.write(OUTPUT_DONE, new Text("FOUND_RECORDS"), new Text(processedCount.toString()));
 	outputs.write(OUTPUT_DONE, null, processed);
 	outputs.close();
 }
@@ -358,8 +370,11 @@ Može se videti da se formirani niz Stringova `output` formira iz dva koraka. Pr
 
 Promenljiva `includeRecord` se vezuje za svaki ključ i nakon obrade lokacionih/senzorskih podataka ukazuje na to da li taj slog treba uvrstiti u rezultat. Zbog preglednosti nije preslikan ceo slog već samo ključni podaci koji pristižu sa reducer-a.
 
+Na kraju, na izlazu se može videti **broj slogova koji zadovoljavaju postavljene uslove** kao i podaci ovih slogova u nastavku.
+
 Primer izlaza:
 ```
+FOUND_RECORDS	931
 [DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882134, -117.234553, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
 [DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882134, -117.234553, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
 [DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.882444, -117.234586, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 1.000000]
@@ -370,22 +385,24 @@ Primer izlaza:
 ...
 ```
 
-Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom i vrednosnu relevantnu jednom očitavanju senzora - svi relevantni podaci su prikazani na izlazu. 
+Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom i vrednosnu relevantnu jednom očitavanju senzora - svi relevantni podaci su prikazani na izlazu. **`FOUND_RECORDS`** vrednost je rešenje postavljenog problema.
 
 ## Zadatak 2)
 
 Za potrebe drugog zadatka koriste se klase `LocationMinMaxMapper.java` i `LocationMinMaxReducer.java`.
 
-Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za selekciju u mepper klasi - po svojoj vrednosti.
+Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači **jedna od kolona podataka očitanih sa senzora** i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za **timestamp vrednost kao ključ**. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za selekciju u mapper klasi - po svojoj vrednosti.
 
 Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je takođe konfigurabilna i sadrži iste konstane poput prošle uz dodatu `N` vrednost koja određuje koliko top-elemenata će biti uključeno u rezultat.
+
+Pomoćnim metodama `Helpers.distanceInM` i `Helpers.differenceTimeH` se izdvojene vrednosti tokena upoređuju sa ciljnim vrednostima i utvrđuje da li slog treba da bude uključen u rezultat ili ne. Pored ovoga, postoji i logika za praćenje važnih vrednosti `minValue`, `maxValue`, `avgValue` i `countValue`. Na primer, vrednosti `avgValue` i `countValue` zavise od svakog sloga koji poseduje validnu vrednost relevantnog atributa.
 
 ```java
 private TreeMap<Double, String> tmap; 
 private Double minValue = 999.99;
 private Double maxValue = 0.0;
-private double avgValue = 0.0;
-private double countValue = 0.0;
+private Double avgValue = 0.0;
+private Double countValue = 0.0;
 private int N = 20;
 
 private String OUTPUT_TEMP = "temporary";
@@ -457,10 +474,11 @@ public void reduce(LongWritable key, Iterable<Text> values, Context context) thr
 public void cleanup(Context context) throws IOException, InterruptedException 
 {
 	avgValue /= countValue;
-	Double avg = avgValue;
+	avgValue /= countValue;
 	outputs.write(OUTPUT_DONE, new Text("MIN_VALUE"), new Text(minValue.toString()));
 	outputs.write(OUTPUT_DONE, new Text("MAX_VALUE"), new Text(maxValue.toString()));
-	outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avg.toString()));
+	outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avgValue.toString()));
+	outputs.write(OUTPUT_DONE, new Text("ATTRIBUTE_COUNT"), new Text(countValue.toString()));
 
 for (Map.Entry<Double, String> entry : tmap.entrySet())  
 { 
@@ -473,13 +491,16 @@ outputs.close();
 } 
 ```
 
-Za potrebe nalaženja top-N elemenata reducer prikupljene podatke smešta u `TreeMap` strukturu sa ograničenom dužinom od N. Maksimalna, minimalna i srednja vrednost se računaju uzimajući u obzir svaki slog. Na kraju, u override-ovanoj metodi `cleanup(Context)` se vrši punjenje izlaza.
+Za vođenje evidencije minimalne, maksimalne, prosečne vrednosti i vrednosti ukupnog broja validnog ponavljanja atributa koriste se promenljive tih imena koje se mogu videti na početku koda. Važno je da svaki slog koji ima validan izabrani atribut utiče na promenu vrednosti pomenutih promenljivih.
+
+Za potrebe nalaženja **top-N elemenata** reducer prikupljene podatke smešta u `TreeMap` strukturu sa ograničenom dužinom od N. Maksimalna, minimalna i srednja vrednost se računaju uzimajući u obzir svaki slog. Na kraju, u override-ovanoj metodi `cleanup(Context)` se vrši punjenje izlaza.
 
 Primer izlaza:
 ```
 MIN_VALUE	0.0
 MAX_VALUE	3.467959
 AVG_VALUE	0.22254551741862044
+ATTRIBUTE_COUNT	3502.0
 2.360237	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.880849, -117.237451, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.360237]
 2.36092	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884160, -117.241318, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.360920]
 2.38021	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.881373, -117.238617, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 2.380210]
@@ -502,13 +523,13 @@ AVG_VALUE	0.22254551741862044
 3.467959	[DATA_LOCATION, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 32.884801, -117.243485, DATA_SENSORS, 0A986513-7828-4D53-AA1F-E02D6DF9561B, 3.467959]
 ```
 
-Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom se po vrednosti izabranog atributa nalaze u top-N skupu.
+Dakle, na izlazu reducer-a nalaze se slogovi koji zadovoljavaju lokacionu i vremensku zavisnost, a pritom se po vrednosti izabranog atributa nalaze u top-N skupu. Pre izlistavanja ovih slogova nalaze se vrednosti promenljivih maksimalne, minimalne, srednje i vrednosti broja pronađenog atributa.
 
 ## Zadatak 3)
 
 Za potrebe trećeg zadatka koriste se klase `LocationAccelerometerMapper.java` i `LocationAccelerometerReducer.java`.
 
-Kako je analogija mapper klase jako slična prethodnom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (accelerometer magnitude vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
+Kako je analogija mapper klase jako slična prvom zadatku, neće biti objašnjavana detaljno. Treba napomenuti da se ponovo izvlači jedna od kolona senzora (**accelerometer magnitude** vrednost) i koriste identični prefiksi za podatke koji potiču sa lokacionih izvora i senzora. Ovi podaci se vezuju za timestamp vrednost kao ključ. Važno je da se izabrani atribut senzorskih očitavanja u reducer klasi koristi za izračunavanja u mepper klasi - po svojoj vrednosti.
 
 Što se tiče reducer klase, implementacioni detalji mogu se videti u kodu koji sledi. Klasa je konfigurabilna po prethodnoj analogiji, s tim što ne uključuje filtriranje po vremenu, već se uzimaju u obzir podaci svih vremenskih izvora.
 

@@ -865,3 +865,9 @@ Kako je ovo pokazni primer, konstanta koja određuje da li su dve tačke dovoljn
 ## Zadatak 6)
 
 > Aplikaciju testirati na klasteru računara i evaluirati rad aplikacije na različitom broju računara u klasteru.
+
+U procesu razvijanja aplikacije su ravnopravno korišćeni **lokalni** i **pseduo-distribuirani mod**. Za potrebe izvršavanja aplikacije na klasteru računara korišćen je besplatni trial provajdera **CloudxLab**
+
+![alt text][screenshot_cloudxlab]
+
+[screenshot_cloudxlab]: meta/screenshot_cloudxlab.png

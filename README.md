@@ -866,8 +866,16 @@ Kako je ovo pokazni primer, konstanta koja određuje da li su dve tačke dovoljn
 
 > Aplikaciju testirati na klasteru računara i evaluirati rad aplikacije na različitom broju računara u klasteru.
 
-U procesu razvijanja aplikacije su ravnopravno korišćeni **lokalni** i **pseduo-distribuirani mod**. Za potrebe izvršavanja aplikacije na klasteru računara korišćen je besplatni trial provajdera **CloudxLab**
+U procesu razvijanja aplikacije su ravnopravno korišćeni **lokalni** i **pseduo-distribuirani mod**. Za potrebe izvršavanja aplikacije na klasteru računara korišćen je besplatni trial provajdera **CloudxLab**.
 
-![alt text][screenshot_cloudxlab]
+![alt text][screenshot_cloudlabx]
 
-[screenshot_cloudxlab]: meta/screenshot_cloudxlab.png
+[screenshot_cloudlabx]: meta/screenshot_cloudlabx.png
+
+Sve izvorne datoteke se pre svega kloniraju sa ovog repozitorijuma, neophodno je dostaviti i potrebnu `buid.xml` konfiguracionu datoteku. Zatim, sa terminala paltforme treba generisati buld projekta.
+
+`$ git clone https://github.com/dusandjovanovic/hadoop-location-mobility-dataset-analysis.git`
+
+`$ ant build`
+
+`$ hadoop `

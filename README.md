@@ -876,6 +876,6 @@ Sve izvorne datoteke se pre svega kloniraju sa ovog repozitorijuma, neophodno je
 
 `$ git clone https://github.com/dusandjovanovic/hadoop-location-mobility-dataset-analysis.git`
 
-`$ ant build`
+`$ ant jar`
 
-`$ hadoop `
+`$ hadoop jar RunMapReduce.jar /ncdc/uuid_merged ncdc/output`

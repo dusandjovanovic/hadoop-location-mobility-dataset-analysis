@@ -872,7 +872,7 @@ U procesu razvijanja aplikacije su ravnopravno korišćeni **lokalni** i **psedu
 
 [screenshot_cloudlabx]: meta/screenshot_cloudlabx.png
 
-Sve izvorne datoteke se pre svega kloniraju sa ovog repozitorijuma, neophodno je dostaviti i potrebnu `buid.xml` konfiguracionu datoteku. Zatim, sa terminala paltforme treba generisati buld projekta.
+Sve izvorne datoteke se pre svega kloniraju sa ovog repozitorijuma, neophodno je dostaviti i potrebnu `buid.xml` konfiguracionu datoteku. Zatim, sa terminala paltforme treba generisati izvršnu `jar` datoteku projekta.
 
 `$ git clone https://github.com/dusandjovanovic/hadoop-location-mobility-dataset-analysis.git`
 
@@ -888,7 +888,7 @@ Nakon postavljanja ulaznih datoteka i pokretanja nad `hadoop-om` sa odgovarajuć
 
 Nakon pokretanja više poslova u različitim konfiguracijama, pregled izvršenih poslova može se videti na `Dashboard-u`.
 
-![alt text][screenshot_jobs.png]
+![alt text][screenshot_jobs]
 
 [screenshot_jobs]: meta/screenshot_jobs.png
 
@@ -896,7 +896,7 @@ Nakon pokretanja više poslova u različitim konfiguracijama, pregled izvršenih
 
 [screenshot_jobdesc]: meta/screenshot_jobdesc.png
 
-Rezultat obrade i izvršavanja aplikacije na klastaru nalzi se na `hdfs-u`. Rezultati su identični kao i u slučaju lokalnih pokretanja. 
+Rezultat obrade i izvršavanja aplikacije na klastaru nalzi se na `hdfs-u`. Rezultati su identični kao i u slučaju lokalnih testiranja. 
 
 ![alt text][screenshot_hdfs]
 

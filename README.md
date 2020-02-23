@@ -879,3 +879,25 @@ Sve izvorne datoteke se pre svega kloniraju sa ovog repozitorijuma, neophodno je
 `$ ant jar`
 
 `$ hadoop jar RunMapReduce.jar /ncdc/uuid_merged ncdc/output`
+
+Nakon postavljanja ulaznih datoteka i pokretanja nad `hadoop-om` sa odgovarajućim argumentima, job se izvršava na klasteru. Pritom, podešavanja broja čvorova treba uraditi pre toga.
+
+![alt text][screenshot_jobstart]
+
+[screenshot_jobstart]: meta/screenshot_jobstart.png
+
+Nakon pokretanja više poslova u različitim konfiguracijama, pregled izvršenih poslova može se videti na `Dashboard-u`.
+
+![alt text][screenshot_jobs.png]
+
+[screenshot_jobs]: meta/screenshot_jobs.png
+
+![alt text][screenshot_jobdesc]
+
+[screenshot_jobdesc]: meta/screenshot_jobdesc.png
+
+Rezultat obrade i izvršavanja aplikacije na klastaru nalzi se na `hdfs-u`. Rezultati su identični kao i u slučaju lokalnih pokretanja. 
+
+![alt text][screenshot_hdfs]
+
+[screenshot_hdfs]: meta/screenshot_hdfs.png

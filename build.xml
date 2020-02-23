@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- WARNING: Eclipse auto-generated file.
+              Any modifications will be overwritten.
+              To include a user specific buildfile here, simply create one in the same
+              directory with the processing instruction <?eclipse.ant.import?>
+              as the first entry and export the buildfile again. --><project basedir="." default="build" name="LocationMobility">
+    <property environment="env"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="11"/>
+    <property name="source" value="11"/>
+    <path id="LocationMobility.classpath">
+        <pathelement location="."/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/common/hadoop-common-3.2.1-tests.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/common/hadoop-common-3.2.1.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/etc/hadoop"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/mapreduce/hadoop-mapreduce-client-hs-3.2.1.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/mapreduce/hadoop-mapreduce-client-core-3.2.1.jar"/>
+    </path>
+    <path id="run.LocationMobility.classpath">
+        <path refid="LocationMobility.classpath"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/common/hadoop-common-3.2.1-tests.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/common/hadoop-common-3.2.1.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/etc/hadoop"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/mapreduce/hadoop-mapreduce-client-hs-3.2.1.jar"/>
+        <pathelement location="../../../../usr/local/hadoop-3.2.1/share/hadoop/mapreduce/hadoop-mapreduce-client-core-3.2.1.jar"/>
+    </path>
+    <target name="init">
+        <copy includeemptydirs="false" todir=".">
+            <fileset dir=".">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+    <target name="clean">
+        <delete>
+            <fileset dir="." includes="**/*.class"/>
+        </delete>
+    </target>
+    <target depends="clean" name="cleanall"/>
+    <target depends="build-subprojects,build-project" name="build"/>
+    <target name="build-subprojects"/>
+    <target depends="init" name="build-project">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="." includeantruntime="false" source="${source}" target="${target}">
+            <src path="."/>
+            <classpath refid="LocationMobility.classpath"/>
+        </javac>
+    </target>
+    <target description="Build all projects which reference this project. Useful to propagate changes." name="build-refprojects"/>
+    <target description="copy Eclipse compiler jars to ant lib directory" name="init-eclipse-compiler">
+        <copy todir="${ant.library.dir}">
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </copy>
+        <unzip dest="${ant.library.dir}">
+            <patternset includes="jdtCompilerAdapter.jar"/>
+            <fileset dir="${ECLIPSE_HOME}/plugins" includes="org.eclipse.jdt.core_*.jar"/>
+        </unzip>
+    </target>
+    <target description="compile project with Eclipse compiler" name="build-eclipse-compiler">
+        <property name="build.compiler" value="org.eclipse.jdt.core.JDTCompilerAdapter"/>
+        <antcall target="build"/>
+    </target>
+    <target name="LocationMobility">
+        <java classname="LocationMobility" failonerror="true" fork="yes">
+            <env key="HADOOP_HOME" value="${file_uri:$HADOOP_HOME}"/>
+            <arg line="ncdc/uuid_features/0A986513-7828-4D53-AA1F-E02D6DF9561B.features_labels.csv ncdc/output"/>
+            <classpath refid="run.LocationMobility.classpath"/>
+        </java>
+    </target>
+</project>

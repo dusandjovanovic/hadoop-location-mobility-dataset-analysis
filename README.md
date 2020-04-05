@@ -484,14 +484,14 @@ public void cleanup(Context context) throws IOException, InterruptedException
 	outputs.write(OUTPUT_DONE, new Text("AVG_VALUE"), new Text(avgValue.toString()));
 	outputs.write(OUTPUT_DONE, new Text("ATTRIBUTE_COUNT"), new Text(countValue.toString()));
 
-for (Map.Entry<Double, String> entry : tmap.entrySet())  
-{ 
-	Text tokens = new Text(entry.getValue());
-	Text magnitude_value = new Text(entry.getKey().toString());
-	outputs.write(OUTPUT_DONE, magnitude_value, tokens);
-}
+	for (Map.Entry<Double, String> entry : tmap.entrySet())  
+	{ 
+		Text tokens = new Text(entry.getValue());
+		Text magnitude_value = new Text(entry.getKey().toString());
+		outputs.write(OUTPUT_DONE, magnitude_value, tokens);
+	}
 
-outputs.close();
+	outputs.close();
 } 
 ```
 
